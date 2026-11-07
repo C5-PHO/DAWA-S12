@@ -1,69 +1,18 @@
-import Image from "next/image";
+"use client";
+import Link from "next/link";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { request, type Author, type Book } from "@/lib/types";
 
 export default function Home() {
-  return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+  const [authors,setAuthors]=useState<Author[]>([]),[books,setBooks]=useState<Book[]>([]),[error,setError]=useState(""),[show,setShow]=useState(false),[loading,setLoading]=useState(true),[busy,setBusy]=useState(false);
+  const load=useCallback(async()=>{try{setError("");const [a,b]=await Promise.all([request<Author[]>("/api/authors"),request<Book[]>("/api/books")]);setAuthors(a);setBooks(b)}catch(e){setError((e as Error).message)}finally{setLoading(false)}},[]);
+  useEffect(()=>{const timer=setTimeout(()=>void load(),0);return()=>clearTimeout(timer)},[load]);
+  async function create(e:FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setError("");const form=e.currentTarget;const f=new FormData(form);try{await request("/api/authors",{method:"POST",body:JSON.stringify({name:f.get("name"),email:f.get("email"),nationality:f.get("nationality")||null,birthYear:f.get("birthYear")?Number(f.get("birthYear")):null,bio:f.get("bio")||null})});form.reset();setShow(false);await load()}catch(e){setError((e as Error).message)}finally{setBusy(false)}}
+  async function remove(a:Author){if(!window.confirm(`¿Eliminar a ${a.name} y todos sus libros?`))return;try{await request(`/api/authors/${a.id}`,{method:"DELETE"});await load()}catch(e){setError((e as Error).message)}}
+  const genres=new Set(books.map(b=>b.genre).filter(Boolean));
+  return <><section className="hero"><div><p className="eyebrow">Panel de control / Autores</p><h1>Historias que perduran.</h1><p className="muted">Organiza autores y descubre los libros de tu biblioteca.</p></div><button className="button" onClick={()=>setShow(!show)}>{show?"Cerrar formulario":"+ Agregar autor"}</button></section>
+    <section className="stats"><div className="stat"><span>Autores registrados</span><strong>{authors.length.toString().padStart(2,"0")}</strong></div><div className="stat"><span>Libros en la colección</span><strong>{books.length.toString().padStart(2,"0")}</strong></div><div className="stat"><span>Géneros literarios</span><strong>{genres.size.toString().padStart(2,"0")}</strong></div></section>
+    {error&&<div className="notice" role="alert">{error}</div>}
+    {show&&<section className="panel"><div className="section-head"><div><p className="eyebrow">Nuevo registro</p><h2>Agregar autor</h2></div></div><form onSubmit={create}><div className="form-grid"><label className="field">Nombre completo *<input name="name" required /></label><label className="field">Correo electrónico *<input name="email" type="email" required /></label><label className="field">Nacionalidad<input name="nationality" /></label><label className="field">Año de nacimiento<input name="birthYear" type="number" /></label><label className="field full">Biografía<textarea name="bio" /></label></div><div className="form-actions"><button className="button" disabled={busy}>Guardar autor</button><button type="button" className="button secondary" onClick={()=>setShow(false)}>Cancelar</button></div></form></section>}
+    <section><div className="section-head"><div><p className="eyebrow">Tu colección</p><h2>Autores</h2><p className="muted">Explora y administra los perfiles registrados.</p></div><Link className="text-link" href="/books">Ver todos los libros →</Link></div><div className="list">{loading?<p className="empty">Cargando autores...</p>:authors.length===0?<p className="empty">Aún no hay autores. Agrega el primero para comenzar.</p>:authors.map(a=><article className="row" key={a.id}><div className="avatar">{a.name.charAt(0).toUpperCase()}</div><div className="row-main"><h3>{a.name}</h3><p>{a.nationality||"Nacionalidad no especificada"} · {a._count?.books??a.books?.length??0} libros</p></div><div className="actions"><Link className="button secondary" href={`/authors/${a.id}`}>Ver libros</Link><Link className="button secondary" href={`/authors/${a.id}?edit=1`}>Editar</Link><button className="button danger" onClick={()=>remove(a)}>Eliminar</button></div></article>)}</div></section></>;
 }

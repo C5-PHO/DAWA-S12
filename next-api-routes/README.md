@@ -51,4 +51,16 @@ Al eliminar un autor se eliminan en cascada sus libros, según el esquema de Pri
 - `lib/prisma.ts`: cliente de Prisma.
 - `prisma7.config.ts`: configuración de Prisma CLI.
 
-La búsqueda avanzada, las estadísticas y las páginas de gestión corresponden a la sección TAREA y están pendientes.
+## Funcionalidades
+
+El panel permite crear y administrar autores, consultar sus libros y ver estadísticas. El catálogo ofrece creación y edición de libros, búsqueda por título, filtros por autor y género, ordenamiento y paginación. El detalle del autor muestra sus obras y estadísticas.
+
+Las rutas adicionales son `GET /api/books/search` para búsqueda paginada y `GET /api/authors/:id/stats` para estadísticas. La búsqueda acepta `search`, `genre`, `authorName`, `page`, `limit`, `sortBy` y `order`.
+
+## Capturas
+
+![Panel de autores](docs/capturas/autores.png)
+
+![Catálogo de libros](docs/capturas/libros.png)
+
+![Detalle del autor](docs/capturas/detalle-autor.png)
